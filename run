@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$(dpkg -l | awk '/libgtk-4-dev/ {print }'|wc -l)" -eq 0 ]; then
+	echo "libgtk-4-dev was not found, but can be installed with 'sudo apt install libgtk-4-dev'"
+
+	read -p "Would you like to install it? (y/n) " yn
+
+	case $yn in 
+		[yY] ) sudo apt install libgtk-4-dev;
+			break;;
+	esac
+
+fi
+
+g++ -I. $(pkg-config --cflags gtk4) -o passwds.out main.cpp $(pkg-config --libs gtk4) && time ./passwds.out
