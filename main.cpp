@@ -10,6 +10,14 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	gtk_window_set_default_size(GTK_WINDOW(window), 400, 300);
 
 	GtkWidget* grid = gtk_grid_new();
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 16);
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 16);
+	gtk_grid_set_column_homogeneous(GTK_GRID(grid), true);
+	gtk_grid_set_row_homogeneous(GTK_GRID(grid), true);
+	gtk_widget_set_margin_top(grid, 8);
+	gtk_widget_set_margin_bottom(grid, 8);
+	gtk_widget_set_margin_start(grid, 8);
+	gtk_widget_set_margin_end(grid, 8);
 	gtk_window_set_child(GTK_WINDOW(window), grid);
 
 	GtkWidget* button = gtk_button_new_with_label("Hello World");
