@@ -1,22 +1,61 @@
 #include <gtk/gtk.h>
 
-static void generate(GtkWidget *widget, gpointer data) {
-	g_print("generate\n");
+bool preventNext = false;
+
+static void generate(GtkWidget* widget, gpointer data) {
+	GtkWidget* window = gtk_window_new();
+	gtk_window_set_title (GTK_WINDOW(window), "Generate");
+	gtk_window_set_default_size(GTK_WINDOW(window), 300, 200);
+
+	GtkWidget* grid = gtk_grid_new();
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 16);
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 16);
+	gtk_grid_set_column_homogeneous(GTK_GRID(grid), true);
+	gtk_grid_set_row_homogeneous(GTK_GRID(grid), true);
+	gtk_widget_set_margin_top(grid, 8);
+	gtk_widget_set_margin_bottom(grid, 8);
+	gtk_widget_set_margin_start(grid, 8);
+	gtk_widget_set_margin_end(grid, 8);
+	gtk_window_set_child(GTK_WINDOW(window), grid);
+
+	GtkWidget* lengthLabel = gtk_label_new_with_mnemonic("Length: ");
+	static GtkWidget* lengthSlider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1.0, 24.0, 1.0);
+	static GtkWidget* lengthEntry = gtk_entry_new();
+	gtk_label_set_mnemonic_widget(GTK_LABEL(lengthLabel), lengthSlider);
+	gtk_label_set_xalign(GTK_LABEL(lengthLabel), 1.0f);
+	g_signal_connect(lengthSlider, "value-changed", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		preventNext = true;
+		int val = int(gtk_range_get_value(GTK_RANGE(lengthSlider)));
+		gtk_editable_set_text(GTK_EDITABLE(lengthEntry), g_strdup_printf("%i", val));
+	}), NULL);
+	g_signal_connect(lengthEntry, "changed", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		if (preventNext) {
+			preventNext = false;
+			return;
+		}
+		int val = atoi(gtk_editable_get_text(GTK_EDITABLE(lengthEntry)));
+		gtk_range_set_value(GTK_RANGE(lengthSlider), val);
+	}), NULL);
+	gtk_grid_attach(GTK_GRID(grid), lengthLabel, 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), lengthSlider, 1, 0, 2, 1);
+	gtk_grid_attach(GTK_GRID(grid), lengthEntry, 3, 0, 1, 1);
+
+	gtk_window_present(GTK_WINDOW(window));
 }
 
-static void check(GtkWidget *widget, gpointer data) {
+static void check(GtkWidget* widget, gpointer data) {
 	g_print("check\n");
 }
 
-static void save(GtkWidget *widget, gpointer data) {
+static void save(GtkWidget* widget, gpointer data) {
 	g_print("save\n");
 }
 
-static void load(GtkWidget *widget, gpointer data) {
+static void load(GtkWidget* widget, gpointer data) {
 	g_print("load\n");
 }
 
-static void activate(GtkApplication *app, gpointer user_data) {
+static void activate(GtkApplication* app, gpointer user_data) {
 	GtkWidget* window = gtk_application_window_new(app);
 	gtk_window_set_title (GTK_WINDOW(window), "Passwds");
 	gtk_window_set_default_size(GTK_WINDOW(window), 400, 300);
