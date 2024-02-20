@@ -1,6 +1,6 @@
 #include <gtk/gtk.h>
 
-#include "generate.h"
+#include "generate.hpp"
 
 bool preventNextLengthChange = false;
 

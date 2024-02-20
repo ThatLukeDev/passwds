@@ -1,3 +1,7 @@
+*.swp
+*tmp*
+*temp*
+
 # Prerequisites
 *.d
 
