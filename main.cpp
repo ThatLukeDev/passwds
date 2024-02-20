@@ -1,6 +1,11 @@
 #include <gtk/gtk.h>
 
-bool preventNext = false;
+#include "generate.h"
+
+bool preventNextLengthChange = false;
+
+GtkWidget* nameEntry;
+GtkWidget* passwdEntry;
 
 static void generate(GtkWidget* widget, gpointer data) {
 	GtkWidget* window = gtk_window_new();
@@ -24,21 +29,32 @@ static void generate(GtkWidget* widget, gpointer data) {
 	gtk_label_set_mnemonic_widget(GTK_LABEL(lengthLabel), lengthSlider);
 	gtk_label_set_xalign(GTK_LABEL(lengthLabel), 1.0f);
 	g_signal_connect(lengthSlider, "value-changed", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
-		preventNext = true;
+		if (preventNextLengthChange) {
+			preventNextLengthChange = false;
+			return;
+		}
 		int val = int(gtk_range_get_value(GTK_RANGE(lengthSlider)));
 		gtk_editable_set_text(GTK_EDITABLE(lengthEntry), g_strdup_printf("%i", val));
 	}), NULL);
 	g_signal_connect(lengthEntry, "changed", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
-		if (preventNext) {
-			preventNext = false;
-			return;
-		}
+		preventNextLengthChange = true;
 		int val = atoi(gtk_editable_get_text(GTK_EDITABLE(lengthEntry)));
 		gtk_range_set_value(GTK_RANGE(lengthSlider), val);
 	}), NULL);
 	gtk_grid_attach(GTK_GRID(grid), lengthLabel, 0, 0, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid), lengthSlider, 1, 0, 2, 1);
 	gtk_grid_attach(GTK_GRID(grid), lengthEntry, 3, 0, 1, 1);
+
+	GtkWidget* generateButton = gtk_button_new_with_label("Generate");
+	g_signal_connect(generateButton, "clicked", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		int len = atoi(gtk_editable_get_text(GTK_EDITABLE(lengthEntry)));
+		char randPass[len + 1];
+		populateRand(randPass, len + 1);
+		gtk_editable_set_text(GTK_EDITABLE(passwdEntry), g_strdup_printf("%s", (char*)randPass));
+	}), NULL);
+	gtk_grid_attach(GTK_GRID(grid), generateButton, 0, 1, 4, 1);
+
+	gtk_editable_set_text(GTK_EDITABLE(lengthEntry), g_strdup_printf("24"));
 
 	gtk_window_present(GTK_WINDOW(window));
 }
@@ -71,14 +87,14 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	gtk_widget_set_margin_end(grid, 8);
 	gtk_window_set_child(GTK_WINDOW(window), grid);
 
-	GtkWidget* nameEntry = gtk_entry_new();
+	nameEntry = gtk_entry_new();
 	GtkWidget* nameLabel = gtk_label_new_with_mnemonic("Name: ");
 	gtk_label_set_mnemonic_widget(GTK_LABEL(nameLabel), nameEntry);
 	gtk_label_set_xalign(GTK_LABEL(nameLabel), 1.0f);
 	gtk_grid_attach(GTK_GRID(grid), nameLabel, 0, 0, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid), nameEntry, 1, 0, 3, 1);
 
-	GtkWidget* passwdEntry = gtk_entry_new();
+	passwdEntry = gtk_entry_new();
 	GtkWidget* passwdLabel = gtk_label_new_with_mnemonic("Password: ");
 	gtk_label_set_mnemonic_widget(GTK_LABEL(passwdLabel), passwdEntry);
 	gtk_label_set_xalign(GTK_LABEL(passwdLabel), 1.0f);
