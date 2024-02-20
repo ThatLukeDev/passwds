@@ -4,59 +4,12 @@
 
 bool preventNextLengthChange = false;
 
+GtkWidget* genWindow;
 GtkWidget* nameEntry;
 GtkWidget* passwdEntry;
 
 static void generate(GtkWidget* widget, gpointer data) {
-	GtkWidget* window = gtk_window_new();
-	gtk_window_set_title (GTK_WINDOW(window), "Generate");
-	gtk_window_set_default_size(GTK_WINDOW(window), 300, 200);
-
-	GtkWidget* grid = gtk_grid_new();
-	gtk_grid_set_column_spacing(GTK_GRID(grid), 16);
-	gtk_grid_set_row_spacing(GTK_GRID(grid), 16);
-	gtk_grid_set_column_homogeneous(GTK_GRID(grid), true);
-	gtk_grid_set_row_homogeneous(GTK_GRID(grid), true);
-	gtk_widget_set_margin_top(grid, 8);
-	gtk_widget_set_margin_bottom(grid, 8);
-	gtk_widget_set_margin_start(grid, 8);
-	gtk_widget_set_margin_end(grid, 8);
-	gtk_window_set_child(GTK_WINDOW(window), grid);
-
-	GtkWidget* lengthLabel = gtk_label_new_with_mnemonic("Length: ");
-	static GtkWidget* lengthSlider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1.0, 24.0, 1.0);
-	static GtkWidget* lengthEntry = gtk_entry_new();
-	gtk_label_set_mnemonic_widget(GTK_LABEL(lengthLabel), lengthSlider);
-	gtk_label_set_xalign(GTK_LABEL(lengthLabel), 1.0f);
-	g_signal_connect(lengthSlider, "value-changed", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
-		if (preventNextLengthChange) {
-			preventNextLengthChange = false;
-			return;
-		}
-		int val = int(gtk_range_get_value(GTK_RANGE(lengthSlider)));
-		gtk_editable_set_text(GTK_EDITABLE(lengthEntry), g_strdup_printf("%i", val));
-	}), NULL);
-	g_signal_connect(lengthEntry, "changed", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
-		preventNextLengthChange = true;
-		int val = atoi(gtk_editable_get_text(GTK_EDITABLE(lengthEntry)));
-		gtk_range_set_value(GTK_RANGE(lengthSlider), val);
-	}), NULL);
-	gtk_grid_attach(GTK_GRID(grid), lengthLabel, 0, 0, 1, 1);
-	gtk_grid_attach(GTK_GRID(grid), lengthSlider, 1, 0, 2, 1);
-	gtk_grid_attach(GTK_GRID(grid), lengthEntry, 3, 0, 1, 1);
-
-	GtkWidget* generateButton = gtk_button_new_with_label("Generate");
-	g_signal_connect(generateButton, "clicked", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
-		int len = atoi(gtk_editable_get_text(GTK_EDITABLE(lengthEntry)));
-		char randPass[len + 1];
-		populateRand(randPass, len + 1);
-		gtk_editable_set_text(GTK_EDITABLE(passwdEntry), g_strdup_printf("%s", (char*)randPass));
-	}), NULL);
-	gtk_grid_attach(GTK_GRID(grid), generateButton, 0, 1, 4, 1);
-
-	gtk_editable_set_text(GTK_EDITABLE(lengthEntry), g_strdup_printf("24"));
-
-	gtk_window_present(GTK_WINDOW(window));
+	gtk_window_present(GTK_WINDOW(genWindow));
 }
 
 static void check(GtkWidget* widget, gpointer data) {
@@ -116,6 +69,57 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	GtkWidget* loadButton = gtk_button_new_with_label("Load");
 	g_signal_connect(loadButton, "clicked", G_CALLBACK(load), NULL);
 	gtk_grid_attach(GTK_GRID(grid), loadButton, 2, 3, 2, 1);
+
+
+	genWindow = gtk_window_new();
+	gtk_window_set_title (GTK_WINDOW(genWindow), "Generate");
+	gtk_window_set_default_size(GTK_WINDOW(genWindow), 300, 200);
+	gtk_window_set_hide_on_close(GTK_WINDOW(genWindow), true);
+
+	GtkWidget* genGrid = gtk_grid_new();
+	gtk_grid_set_column_spacing(GTK_GRID(genGrid), 16);
+	gtk_grid_set_row_spacing(GTK_GRID(genGrid), 16);
+	gtk_grid_set_column_homogeneous(GTK_GRID(genGrid), true);
+	gtk_grid_set_row_homogeneous(GTK_GRID(genGrid), true);
+	gtk_widget_set_margin_top(genGrid, 8);
+	gtk_widget_set_margin_bottom(genGrid, 8);
+	gtk_widget_set_margin_start(genGrid, 8);
+	gtk_widget_set_margin_end(genGrid, 8);
+	gtk_window_set_child(GTK_WINDOW(genWindow), genGrid);
+
+	GtkWidget* lengthLabel = gtk_label_new_with_mnemonic("Length: ");
+	static GtkWidget* lengthSlider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1.0, 24.0, 1.0);
+	static GtkWidget* lengthEntry = gtk_entry_new();
+	gtk_label_set_mnemonic_widget(GTK_LABEL(lengthLabel), lengthSlider);
+	gtk_label_set_xalign(GTK_LABEL(lengthLabel), 1.0f);
+	g_signal_connect(lengthSlider, "value-changed", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		if (preventNextLengthChange) {
+			preventNextLengthChange = false;
+			return;
+		}
+		int val = int(gtk_range_get_value(GTK_RANGE(lengthSlider)));
+		gtk_editable_set_text(GTK_EDITABLE(lengthEntry), g_strdup_printf("%i", val));
+	}), NULL);
+	g_signal_connect(lengthEntry, "changed", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		preventNextLengthChange = true;
+		int val = atoi(gtk_editable_get_text(GTK_EDITABLE(lengthEntry)));
+		gtk_range_set_value(GTK_RANGE(lengthSlider), val);
+	}), NULL);
+	gtk_grid_attach(GTK_GRID(genGrid), lengthLabel, 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(genGrid), lengthSlider, 1, 0, 2, 1);
+	gtk_grid_attach(GTK_GRID(genGrid), lengthEntry, 3, 0, 1, 1);
+
+	GtkWidget* genButton = gtk_button_new_with_label("Generate");
+	g_signal_connect(genButton, "clicked", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		int len = atoi(gtk_editable_get_text(GTK_EDITABLE(lengthEntry)));
+		char randPass[len + 1];
+		populateRand(randPass, len + 1);
+		gtk_editable_set_text(GTK_EDITABLE(passwdEntry), g_strdup_printf("%s", (char*)randPass));
+	}), NULL);
+	gtk_grid_attach(GTK_GRID(genGrid), genButton, 0, 1, 4, 1);
+
+	gtk_editable_set_text(GTK_EDITABLE(lengthEntry), g_strdup_printf("24"));
+
 
 	gtk_window_present(GTK_WINDOW(window));
 }
