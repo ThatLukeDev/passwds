@@ -1,3 +1,6 @@
+#ifndef org_tld_passwds_generate
+#define org_tld_passwds_generate
+
 #include <cstdlib>
 #include <cstring>
 #include <chrono>
@@ -13,3 +16,5 @@ void populateRand(char* chars, int len) {
 		chars[i] = rand() % 94 + 33;
 	}
 }
+
+#endif

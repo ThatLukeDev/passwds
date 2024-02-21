@@ -1,18 +1,21 @@
+#ifndef org_tld_passwds_evaluate
+#define org_tld_passwds_evaluate
+
 struct passEval {
-	double avg;
+	double score;
 	double len;
 	double digit;
 	double lower;
 	double upper;
 	double special;
-}
+};
 
-double evalPass(char* input) {
+passEval evalPass(char* input) {
 	int len = strlen(input);
 
 	passEval out;
 
-	out.len = len / 8;
+	out.len = len / 8.0;
 	if (out.len > 1.0) {
 		out.len = 1.0;
 	}
@@ -31,14 +34,13 @@ double evalPass(char* input) {
 		else if (input[i] >= 'A' && input[i] <= 'Z') {
 			out.upper = 1.0;
 		}
-		else if (input[i] >= '!' && input[i] <= '/') {
-			out.upper = 1.0;
-		}
 		else {
 			out.special = 1.0;
 		}
 	}
-	out.avg = (out.digit * 2 + out.lower + out.upper + out.special) / 5;
+	out.score = (out.digit * 2 + out.lower + out.upper + out.special) / 5;
 
 	return out;
 }
+
+#endif

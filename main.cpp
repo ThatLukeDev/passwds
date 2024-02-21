@@ -1,10 +1,20 @@
 #include <gtk/gtk.h>
 
 #include "generate.hpp"
+#include "evaluate.hpp"
 
 bool preventNextLengthChange = false;
 
 GtkWidget* genWindow;
+
+GtkWidget* checkWindow;
+GtkWidget* checkScoreLabel;
+GtkWidget* checkLengthLabel;
+GtkWidget* checkDigitLabel;
+GtkWidget* checkLowerLabel;
+GtkWidget* checkUpperLabel;
+GtkWidget* checkSpecialLabel;
+
 GtkWidget* nameEntry;
 GtkWidget* passwdEntry;
 
@@ -13,7 +23,16 @@ static void generate(GtkWidget* widget, gpointer data) {
 }
 
 static void check(GtkWidget* widget, gpointer data) {
-	g_print("check\n");
+	passEval result = evalPass((char*)gtk_editable_get_text(GTK_EDITABLE(passwdEntry)));
+
+	gtk_label_set_text(GTK_LABEL(checkScoreLabel), g_strdup_printf("Score: %i%%", int(result.score * 100)));
+	gtk_label_set_text(GTK_LABEL(checkLengthLabel), g_strdup_printf("Length: %i%%", int(result.len * 100)));
+	gtk_label_set_text(GTK_LABEL(checkDigitLabel), g_strdup_printf("Digits: %i%%", int(result.digit * 100)));
+	gtk_label_set_text(GTK_LABEL(checkLowerLabel), g_strdup_printf("Lowercase: %i%%", int(result.lower * 100)));
+	gtk_label_set_text(GTK_LABEL(checkUpperLabel), g_strdup_printf("Uppercase: %i%%", int(result.upper * 100)));
+	gtk_label_set_text(GTK_LABEL(checkSpecialLabel), g_strdup_printf("Symbols: %i%%", int(result.special * 100)));
+
+	gtk_window_present(GTK_WINDOW(checkWindow));
 }
 
 static void save(GtkWidget* widget, gpointer data) {
@@ -25,6 +44,7 @@ static void load(GtkWidget* widget, gpointer data) {
 }
 
 static void activate(GtkApplication* app, gpointer user_data) {
+	// main window
 	GtkWidget* window = gtk_application_window_new(app);
 	gtk_window_set_title (GTK_WINDOW(window), "Passwds");
 	gtk_window_set_default_size(GTK_WINDOW(window), 400, 300);
@@ -71,6 +91,7 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	gtk_grid_attach(GTK_GRID(grid), loadButton, 2, 3, 2, 1);
 
 
+	// generate window
 	genWindow = gtk_window_new();
 	gtk_window_set_title (GTK_WINDOW(genWindow), "Generate");
 	gtk_window_set_default_size(GTK_WINDOW(genWindow), 300, 200);
@@ -119,6 +140,48 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	gtk_grid_attach(GTK_GRID(genGrid), genButton, 0, 1, 4, 1);
 
 	gtk_editable_set_text(GTK_EDITABLE(lengthEntry), g_strdup_printf("24"));
+
+
+	// check window
+	checkWindow = gtk_window_new();
+	gtk_window_set_title (GTK_WINDOW(checkWindow), "Generate");
+	gtk_window_set_default_size(GTK_WINDOW(checkWindow), 200, 300);
+	gtk_window_set_hide_on_close(GTK_WINDOW(checkWindow), true);
+
+	GtkWidget* checkGrid = gtk_grid_new();
+	gtk_grid_set_column_spacing(GTK_GRID(checkGrid), 16);
+	gtk_grid_set_row_spacing(GTK_GRID(checkGrid), 16);
+	gtk_grid_set_column_homogeneous(GTK_GRID(checkGrid), true);
+	gtk_grid_set_row_homogeneous(GTK_GRID(checkGrid), true);
+	gtk_widget_set_margin_top(checkGrid, 8);
+	gtk_widget_set_margin_bottom(checkGrid, 8);
+	gtk_widget_set_margin_start(checkGrid, 8);
+	gtk_widget_set_margin_end(checkGrid, 8);
+	gtk_window_set_child(GTK_WINDOW(checkWindow), checkGrid);
+
+	checkScoreLabel = gtk_label_new_with_mnemonic("Score: ");
+	gtk_label_set_xalign(GTK_LABEL(checkScoreLabel), 0.0f);
+	gtk_grid_attach(GTK_GRID(checkGrid), checkScoreLabel, 0, 0, 1, 2);
+
+	checkLengthLabel = gtk_label_new_with_mnemonic("Length: ");
+	gtk_label_set_xalign(GTK_LABEL(checkLengthLabel), 0.0f);
+	gtk_grid_attach(GTK_GRID(checkGrid), checkLengthLabel, 0, 2, 1, 1);
+
+	checkDigitLabel = gtk_label_new_with_mnemonic("Digits: ");
+	gtk_label_set_xalign(GTK_LABEL(checkDigitLabel), 0.0f);
+	gtk_grid_attach(GTK_GRID(checkGrid), checkDigitLabel, 0, 3, 1, 1);
+
+	checkLowerLabel = gtk_label_new_with_mnemonic("Lowercase: ");
+	gtk_label_set_xalign(GTK_LABEL(checkLowerLabel), 0.0f);
+	gtk_grid_attach(GTK_GRID(checkGrid), checkLowerLabel, 0, 4, 1, 1);
+
+	checkUpperLabel = gtk_label_new_with_mnemonic("Uppercase: ");
+	gtk_label_set_xalign(GTK_LABEL(checkUpperLabel), 0.0f);
+	gtk_grid_attach(GTK_GRID(checkGrid), checkUpperLabel, 0, 5, 1, 1);
+
+	checkSpecialLabel = gtk_label_new_with_mnemonic("Symbols: ");
+	gtk_label_set_xalign(GTK_LABEL(checkSpecialLabel), 0.0f);
+	gtk_grid_attach(GTK_GRID(checkGrid), checkSpecialLabel, 0, 6, 1, 1);
 
 
 	gtk_window_present(GTK_WINDOW(window));
