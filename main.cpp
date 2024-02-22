@@ -1,7 +1,10 @@
 #include <gtk/gtk.h>
 
+#include <string>
+
 #include "generate.hpp"
 #include "evaluate.hpp"
+#include "store.hpp"
 
 bool preventNextLengthChange = false;
 
