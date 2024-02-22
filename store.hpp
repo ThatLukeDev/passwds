@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <sys/stat.h>
+#include <cstring>
 #include <string>
 #include <functional>
 
@@ -125,7 +126,7 @@ namespace iosecure {
 		data raw = data(contents.size()+4);
 		raw.content += 4;
 		raw.size -= 4;
-		raw.content = (unsigned char*)contents.c_str();
+		strcpy((char*)raw.content, contents.c_str());
 
 		vernamSelf(raw, data((char*)master.c_str()));
 
