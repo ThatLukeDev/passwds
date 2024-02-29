@@ -20,6 +20,41 @@ namespace sha256 {
 		return (a << (32 - b))|(a >> b);
 	}
 
+	template <typename T>
+	T swap(T a) {
+		T _out = a;
+		for (unsigned int i = 0; i < sizeof(T); i++) {
+			*((char*)(&_out) + i) = *((char*)(&a) + sizeof(T) - 1 - i);
+		}
+		return _out;
+	}
+
+	bool wrongEndian() {
+		unsigned int a = 1;
+		return *(char*)&a == '\0' ? false : true;
+	}
+
+	bool cacheSwp = false;
+	bool doSwp = false;
+
+	template <typename T>
+	T swp(T a) {
+		T _out = a;
+		if (cacheSwp) {
+			if (doSwp) {
+				_out = swap(_out);
+			}
+		}
+		else {
+			doSwp = wrongEndian();
+			cacheSwp = true;
+			if (doSwp) {
+				_out = swap(_out);
+			}
+		}
+		return _out;
+	}
+
 	char* hash(void* data, unsigned int size) {
 		unsigned int h0 = 0x6a09e667;
 		unsigned int h1 = 0xbb67ae85;
@@ -33,63 +68,68 @@ namespace sha256 {
 		unsigned int chunks = (unsigned int)std::ceil((size + 9) / 64.0);
 		unsigned int arrSize = chunks * 64;
 
-		char msg[arrSize];
+		char* msg = (char*)malloc(arrSize);
 		for (unsigned int i = 0; i < arrSize; i++)
 			msg[i] = 0x0;
 		std::memcpy(msg, data, size);
 		msg[size] = 0b10000000;
-		msg[arrSize - 1] = size * 8;
+		*(unsigned long long*)(msg + arrSize - 8) = (unsigned long long)size * 8;
+		*(unsigned long long*)(msg + arrSize - 8) = swp(*(unsigned long long*)(msg + arrSize - 8));
 
 		for (unsigned int cNum = 0; cNum < chunks; cNum++) {
 			char* chunk = msg + cNum * 64;
 
-			unsigned int w[64];
+			//unsigned int w[64];
+			unsigned int* w = (unsigned int*)malloc(256);
 			std::memcpy(w, chunk, 64);
 
 			for (unsigned int i = 16; i < 64; i++) {
-				unsigned int s0 = rotate(w[i-15], 7) ^ rotate(w[i-15], 18) ^ rotate(w[i-15], 3);
-				unsigned int s1 = rotate(w[i-2], 17) ^ rotate(w[i-2], 19) ^ rotate(w[i-2], 10);
-				w[i] = w[i-16] + s0 + w[i-7] + s1;
+				unsigned int s0 = rotate(swp(w[i-15]), 7) ^ rotate(swp(w[i-15]), 18) ^ (swp(w[i-15]) >> 3);
+				unsigned int s1 = rotate(swp(w[i-2]), 17) ^ rotate(swp(w[i-2]), 19) ^ (swp(w[i-2]) >> 10);
+				if (doSwp)
+					w[i] = swp(swp(w[i-16]) + swp(w[i-7]) + s0 + s1);
+				else
+					w[i] = w[i-16] + s0 + w[i-7] + s1;
 			}
 
-			unsigned int a = h0;
-			unsigned int b = h1;
-			unsigned int c = h2;
-			unsigned int d = h3;
-			unsigned int e = h4;
-			unsigned int f = h5;
-			unsigned int g = h6;
-			unsigned int h = h7;
+			unsigned int a = swp(h0);
+			unsigned int b = swp(h1);
+			unsigned int c = swp(h2);
+			unsigned int d = swp(h3);
+			unsigned int e = swp(h4);
+			unsigned int f = swp(h5);
+			unsigned int g = swp(h6);
+			unsigned int h = swp(h7);
 
 			for (unsigned int i = 0; i < 64; i++) {
-				unsigned int S1 = rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25);
-				unsigned int ch = (e & f) ^ ((~e) & g);
-				unsigned int temp1 = h + S1 + ch + k[i] + w[i];
-				unsigned int S0 = rotate(a, 2) ^ rotate(a, 13) ^ rotate(a, 22);
-				unsigned int maj = (a & b) ^ (a & c) ^ (b & c);
+				unsigned int S1 = rotate(swp(e), 6) ^ rotate(swp(e), 11) ^ rotate(swp(e), 25);
+				unsigned int ch = (swp(e) & swp(f)) ^ (swp(~e) & swp(g));
+				unsigned int temp1 = swp(h) + S1 + ch + k[i] + swp(w[i]);
+				unsigned int S0 = rotate(swp(a), 2) ^ rotate(swp(a), 13) ^ rotate(swp(a), 22);
+				unsigned int maj = swp((a & b) ^ (a & c) ^ (b & c));
 				unsigned int temp2 = S0 + maj;
 
 				h = g;
 				g = f;
 				f = e;
-				e = d + temp1;
+				e = swp(swp(d) + temp1);
 				d = c;
 				c = b;
 				b = a;
-				a = temp1 + temp2;
+				a = swp(temp1 + temp2);
 			}
 
-			h0 = h0 + a;
-			h1 = h1 + b;
-			h2 = h2 + c;
-			h3 = h3 + d;
-			h4 = h4 + e;
-			h5 = h5 + f;
-			h6 = h6 + g;
-			h7 = h7 + h;
+			h0 = swp(h0 + swp(a));
+			h1 = swp(h1 + swp(b));
+			h2 = swp(h2 + swp(c));
+			h3 = swp(h3 + swp(d));
+			h4 = swp(h4 + swp(e));
+			h5 = swp(h5 + swp(f));
+			h6 = swp(h6 + swp(g));
+			h7 = swp(h7 + swp(h));
 		}
 
-		char* out = (char*)malloc(256);
+		char* out = (char*)malloc(32);
 		memcpy(out + 0x00, &h0, 4);
 		memcpy(out + 0x04, &h1, 4);
 		memcpy(out + 0x08, &h2, 4);
@@ -98,6 +138,8 @@ namespace sha256 {
 		memcpy(out + 0x14, &h5, 4);
 		memcpy(out + 0x18, &h6, 4);
 		memcpy(out + 0x1C, &h7, 4);
+
+		free(msg);
 
 		return (char*)out;
 	}
