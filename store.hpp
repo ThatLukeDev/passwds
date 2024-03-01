@@ -7,6 +7,8 @@
 #include <string>
 #include <functional>
 
+#include "hash.hpp"
+
 class data {
 public:
 	unsigned char* content;
@@ -34,8 +36,6 @@ namespace iosecure {
 	std::string filename;
 	std::string master;
 	std::string contents;
-
-	std::hash<std::string> stringHash;
 
 	int getFiletype(char* _filename) {
 		struct stat sb;
@@ -68,17 +68,22 @@ namespace iosecure {
 			return -1;
 		}
 
-		size_t checksum;
-		sr.read((char*)&checksum, 4);
-
+		char* checksum = (char*)malloc(32);
+		sr.read(checksum, 32);
 		sr.close();
 
-		size_t hash = stringHash(master);
+		char* hash = sha256::hash(master.c_str());
 
-		if (hash != checksum) {
-			return -1;
+		bool eq = true;
+		for (int i = 0; i < 32; i++) {
+			if (*(checksum+i) != *(hash+i)) {
+				eq = false;
+			}
 		}
 
+		if (!eq) {
+			return -1;
+		}
 		return 0;
 	}
 
@@ -101,11 +106,11 @@ namespace iosecure {
 				sr.seekg(0, std::ios::end);
 				if (sr.tellg() < 5)
 					return -1;
-				data ciphered = data((int)sr.tellg()-4);
-				sr.seekg(4);
+				data ciphered = data((int)sr.tellg()-32);
+				sr.seekg(32);
 				sr.read((char*)ciphered.content, ciphered.size);
 
-				data raw = vernam(ciphered, data((char*)master.c_str()));
+				data raw = vernam(ciphered, data((unsigned char*)master.c_str(), master.length()));
 				contents = std::string((char*)raw.content);
 
 				sr.close();
@@ -121,17 +126,18 @@ namespace iosecure {
 		std::ofstream sw;
 		sw.open(filename, std::ios::binary);
 
-		size_t hash = stringHash(master);
+		char* hash = sha256::hash(master.c_str());
 
-		data raw = data(contents.size()+4);
-		raw.content += 4;
-		raw.size -= 4;
+		data raw = data(contents.size()+32);
+		memcpy(raw.content, hash, 32);
+		raw.content += 32;
+		raw.size -= 32;
 		strcpy((char*)raw.content, contents.c_str());
 
-		vernamSelf(raw, data((char*)master.c_str()));
+		vernamSelf(raw, data((unsigned char*)master.c_str(), master.length()));
 
-		raw.content -= 4;
-		raw.size += 4;
+		raw.content -= 32;
+		raw.size += 32;
 
 		sw.write((char*)raw.content, raw.size);
 
