@@ -72,7 +72,7 @@ namespace iosecure {
 		sr.read(checksum, 32);
 		sr.close();
 
-		char* hash = sha256::hash(master.c_str());
+		char* hash = sha256::hashX1000(master.c_str());
 
 		bool eq = true;
 		for (int i = 0; i < 32; i++) {
@@ -126,7 +126,7 @@ namespace iosecure {
 		std::ofstream sw;
 		sw.open(filename, std::ios::binary);
 
-		char* hash = sha256::hash(master.c_str());
+		char* hash = sha256::hashX1000(master.c_str());
 
 		data raw = data(contents.size()+32);
 		memcpy(raw.content, hash, 32);

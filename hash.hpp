@@ -149,6 +149,21 @@ namespace sha256 {
 	char* hash(const char* msg) {
 		return sha256::hash((void*)msg, strlen(msg));
 	}
+
+	char* hashX1000(void* data, unsigned int size) {
+		char* buffer = (char*)malloc(32);
+		buffer = sha256::hash(data, size);
+		for (int i = 0; i < 999; i++) {
+			buffer = sha256::hash((void*)buffer, 32);
+		}
+		return buffer;
+	}
+	char* hashX1000(char* msg) {
+		return sha256::hashX1000((void*)msg, strlen(msg));
+	}
+	char* hashX1000(const char* msg) {
+		return sha256::hashX1000((void*)msg, strlen(msg));
+	}
 }
 
 #endif
