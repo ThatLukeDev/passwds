@@ -10,6 +10,9 @@ bool preventNextLengthChange = false;
 
 GtkWidget* genWindow;
 
+GtkWidget* startPasswdEntry;
+GtkWidget* startLabel;
+
 GtkWidget* checkWindow;
 GtkWidget* checkScoreLabel;
 GtkWidget* checkLengthLabel;
@@ -47,6 +50,38 @@ static void load(GtkWidget* widget, gpointer data) {
 }
 
 static void activate(GtkApplication* app, gpointer user_data) {
+	// start window
+	GtkWidget* startWindow = gtk_application_window_new(app);
+	gtk_window_set_title (GTK_WINDOW(startWindow), "Passwds");
+	gtk_window_set_default_size(GTK_WINDOW(startWindow), 400, 200);
+
+	GtkWidget* startGrid = gtk_grid_new();
+	gtk_grid_set_column_spacing(GTK_GRID(startGrid), 16);
+	gtk_grid_set_row_spacing(GTK_GRID(startGrid), 16);
+	gtk_grid_set_column_homogeneous(GTK_GRID(startGrid), true);
+	gtk_grid_set_row_homogeneous(GTK_GRID(startGrid), true);
+	gtk_widget_set_margin_top(startGrid, 8);
+	gtk_widget_set_margin_bottom(startGrid, 8);
+	gtk_widget_set_margin_start(startGrid, 8);
+	gtk_widget_set_margin_end(startGrid, 8);
+	gtk_window_set_child(GTK_WINDOW(startWindow), startGrid);
+
+	startPasswdEntry = gtk_entry_new();
+	GtkWidget* startPasswdLabel = gtk_label_new_with_mnemonic("Password: ");
+	gtk_label_set_mnemonic_widget(GTK_LABEL(startPasswdLabel), startPasswdEntry);
+	gtk_label_set_xalign(GTK_LABEL(startPasswdLabel), 1.0f);
+	gtk_grid_attach(GTK_GRID(startGrid), startPasswdLabel, 0, 1, 1, 2);
+	gtk_grid_attach(GTK_GRID(startGrid), startPasswdEntry, 1, 1, 3, 2);
+
+	startLabel = gtk_label_new_with_mnemonic("Enter master password");
+	gtk_label_set_xalign(GTK_LABEL(startLabel), 0.0f);
+	gtk_grid_attach(GTK_GRID(startGrid), startLabel, 0, 3, 4, 1);
+
+	GtkWidget* startSubmitButton = gtk_button_new_with_label("Enter");
+	g_signal_connect(startSubmitButton, "clicked", G_CALLBACK(generate), NULL);
+	gtk_grid_attach(GTK_GRID(startGrid), startSubmitButton, 0, 4, 4, 2);
+
+
 	// main window
 	GtkWidget* window = gtk_application_window_new(app);
 	gtk_window_set_title (GTK_WINDOW(window), "Passwds");
@@ -147,7 +182,7 @@ static void activate(GtkApplication* app, gpointer user_data) {
 
 	// check window
 	checkWindow = gtk_window_new();
-	gtk_window_set_title (GTK_WINDOW(checkWindow), "Generate");
+	gtk_window_set_title (GTK_WINDOW(checkWindow), "Security");
 	gtk_window_set_default_size(GTK_WINDOW(checkWindow), 200, 300);
 	gtk_window_set_hide_on_close(GTK_WINDOW(checkWindow), true);
 
@@ -187,7 +222,7 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	gtk_grid_attach(GTK_GRID(checkGrid), checkSpecialLabel, 0, 6, 1, 1);
 
 
-	gtk_window_present(GTK_WINDOW(window));
+	gtk_window_present(GTK_WINDOW(startWindow));
 }
 
 int main(int argc, char** argv) {
