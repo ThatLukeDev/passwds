@@ -33,6 +33,8 @@ public:
 };
 
 namespace iosecure {
+	std::string salt = "^$_aB%TTxm)|0/(dTL2)p!mM";
+
 	std::string filename;
 	std::string master;
 	std::string contents;
@@ -72,7 +74,7 @@ namespace iosecure {
 		sr.read(checksum, 32);
 		sr.close();
 
-		char* hash = sha256::hashX1000(master.c_str());
+		char* hash = sha256::hashX1000((master+salt).c_str());
 
 		bool eq = true;
 		for (int i = 0; i < 32; i++) {
@@ -110,7 +112,7 @@ namespace iosecure {
 				sr.seekg(32);
 				sr.read((char*)ciphered.content, ciphered.size);
 
-				data raw = vernam(ciphered, data((unsigned char*)master.c_str(), master.length()));
+				data raw = vernam(ciphered, data((unsigned char*)sha256::hash((char*)master.c_str()), 32));
 				contents = std::string((char*)raw.content);
 
 				sr.close();
@@ -126,7 +128,7 @@ namespace iosecure {
 		std::ofstream sw;
 		sw.open(filename, std::ios::binary);
 
-		char* hash = sha256::hashX1000(master.c_str());
+		char* hash = sha256::hashX1000((master+salt).c_str());
 
 		data raw = data(contents.size()+32);
 		memcpy(raw.content, hash, 32);
@@ -134,7 +136,7 @@ namespace iosecure {
 		raw.size -= 32;
 		strcpy((char*)raw.content, contents.c_str());
 
-		vernamSelf(raw, data((unsigned char*)master.c_str(), master.length()));
+		vernamSelf(raw, data((unsigned char*)sha256::hash((char*)master.c_str()), 32));
 
 		raw.content -= 32;
 		raw.size += 32;

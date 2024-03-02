@@ -119,6 +119,8 @@ namespace sha256 {
 				a = swp(temp1 + temp2);
 			}
 
+			free(w);
+
 			h0 = swp(h0 + swp(a));
 			h1 = swp(h1 + swp(b));
 			h2 = swp(h2 + swp(c));
