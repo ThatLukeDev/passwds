@@ -6,8 +6,14 @@
 #include "evaluate.hpp"
 #include "store.hpp"
 
-bool preventNextLengthChange = false;
+char* storeName = (char*)".passwds-passkey-store-tmp";
 
+bool preventNextLengthChange = false;
+int startWpasswdEntries = 0;
+gchar* revert;
+
+GtkWidget* startWindow;
+GtkWidget* window;
 GtkWidget* genWindow;
 
 GtkWidget* startPasswdEntry;
@@ -23,6 +29,58 @@ GtkWidget* checkSpecialLabel;
 
 GtkWidget* nameEntry;
 GtkWidget* passwdEntry;
+
+static gboolean revertGc(gpointer data) {
+	gtk_label_set_text(GTK_LABEL(startLabel), revert);
+	return true;
+}
+
+void startDisplayInfo(gchar* msg, gpointer data) {
+	revert = g_strdup_printf("%s", gtk_label_get_text(GTK_LABEL(startLabel)));
+	gtk_label_set_text(GTK_LABEL(startLabel), msg);
+	g_timeout_add(1000, revertGc, data);
+}
+
+static void entry(GtkWidget* widget, gpointer data) {
+	switch (iosecure::getFiletype(storeName)) {
+		case -1:
+			if (startWpasswdEntries > 0) {
+				if (iosecure::master == std::string(gtk_editable_get_text(GTK_EDITABLE(startPasswdEntry)))) {
+					iosecure::open(storeName);
+					iosecure::close();
+					gtk_window_present(GTK_WINDOW(window));
+					gtk_widget_hide(GTK_WIDGET(startWindow));
+				}
+				else {
+					startDisplayInfo(g_strdup_printf("Passwords do not match"), data);
+					startWpasswdEntries = 0;
+				}
+			}
+			else {
+				iosecure::master = std::string(gtk_editable_get_text(GTK_EDITABLE(startPasswdEntry)));
+				startWpasswdEntries++;
+				startDisplayInfo(g_strdup_printf("Re-enter password"), data);
+				gtk_editable_set_text(GTK_EDITABLE(startPasswdEntry), "");
+			}
+			break;
+		case 0:
+			iosecure::master = std::string(gtk_editable_get_text(GTK_EDITABLE(startPasswdEntry)));
+			iosecure::filename = storeName;
+			if (iosecure::checkPasswd() == 0) {
+				iosecure::open(storeName);
+				gtk_window_present(GTK_WINDOW(window));
+				gtk_widget_hide(GTK_WIDGET(startWindow));
+			}
+			else {
+				startDisplayInfo(g_strdup_printf("Incorrect password"), data);
+			}
+			break;
+		case 1:
+			g_print("Error: a directory named %s exists in the base directory", storeName);
+			startDisplayInfo(g_strdup_printf("Error: %s exists", storeName), data);
+			break;
+	}
+}
 
 static void generate(GtkWidget* widget, gpointer data) {
 	gtk_window_present(GTK_WINDOW(genWindow));
@@ -51,7 +109,7 @@ static void load(GtkWidget* widget, gpointer data) {
 
 static void activate(GtkApplication* app, gpointer user_data) {
 	// start window
-	GtkWidget* startWindow = gtk_application_window_new(app);
+	startWindow = gtk_application_window_new(app);
 	gtk_window_set_title (GTK_WINDOW(startWindow), "Passwds");
 	gtk_window_set_default_size(GTK_WINDOW(startWindow), 400, 200);
 
@@ -66,7 +124,8 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	gtk_widget_set_margin_end(startGrid, 8);
 	gtk_window_set_child(GTK_WINDOW(startWindow), startGrid);
 
-	startPasswdEntry = gtk_entry_new();
+	startPasswdEntry = gtk_password_entry_new();
+	gtk_password_entry_set_show_peek_icon(GTK_PASSWORD_ENTRY(startPasswdEntry), true);
 	GtkWidget* startPasswdLabel = gtk_label_new_with_mnemonic("Password: ");
 	gtk_label_set_mnemonic_widget(GTK_LABEL(startPasswdLabel), startPasswdEntry);
 	gtk_label_set_xalign(GTK_LABEL(startPasswdLabel), 1.0f);
@@ -78,12 +137,12 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	gtk_grid_attach(GTK_GRID(startGrid), startLabel, 0, 3, 4, 1);
 
 	GtkWidget* startSubmitButton = gtk_button_new_with_label("Enter");
-	g_signal_connect(startSubmitButton, "clicked", G_CALLBACK(generate), NULL);
+	g_signal_connect(startSubmitButton, "clicked", G_CALLBACK(entry), NULL);
 	gtk_grid_attach(GTK_GRID(startGrid), startSubmitButton, 0, 4, 4, 2);
 
 
 	// main window
-	GtkWidget* window = gtk_application_window_new(app);
+	window = gtk_application_window_new(app);
 	gtk_window_set_title (GTK_WINDOW(window), "Passwds");
 	gtk_window_set_default_size(GTK_WINDOW(window), 400, 300);
 

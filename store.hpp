@@ -94,9 +94,6 @@ namespace iosecure {
 
 		int type = getFiletype((char*)filename.c_str());
 
-		if (type == 1) {
-			return -1;
-		}
 		switch (type) {
 			case 1:
 				return -1;
