@@ -12,10 +12,14 @@ bool preventNextLengthChange = false;
 int startWpasswdEntries = 0;
 gchar* revert;
 
-GtkWidget* startWindow;
 GtkWidget* window;
+
 GtkWidget* genWindow;
 
+GtkWidget* selWindow;
+GtkWidget* selListBox;
+
+GtkWidget* startWindow;
 GtkWidget* startPasswdEntry;
 GtkWidget* startLabel;
 
@@ -29,6 +33,30 @@ GtkWidget* checkSpecialLabel;
 
 GtkWidget* nameEntry;
 GtkWidget* passwdEntry;
+
+void selUpdate() {
+	for (int i = 0; i < 32767; i++) {
+		GtkListBoxRow* item = gtk_list_box_get_row_at_index(GTK_LIST_BOX(selListBox), 0);
+		if (item == nullptr) {
+			break;
+		}
+		gtk_list_box_remove(GTK_LIST_BOX(selListBox), GTK_WIDGET(item));
+	}
+
+	std::string buildName;
+	for (int i = 0; i < iosecure::contents.length(); i++) {
+		if (iosecure::contents[i] == '\2') {
+			buildName = "";
+		}
+		else if (iosecure::contents[i] == '\3') {
+			GtkWidget* child = gtk_label_new_with_mnemonic(buildName.c_str());
+			gtk_list_box_append(GTK_LIST_BOX(selListBox), child);
+		}
+		else {
+			buildName += iosecure::contents[i];
+		}
+	}
+}
 
 static gboolean revertGc(gpointer data) {
 	gtk_label_set_text(GTK_LABEL(startLabel), revert);
@@ -100,11 +128,41 @@ static void check(GtkWidget* widget, gpointer data) {
 }
 
 static void save(GtkWidget* widget, gpointer data) {
-	g_print("save\n");
+	std::string cmpName = gtk_editable_get_text(GTK_EDITABLE(nameEntry));
+	std::string cmpPass = gtk_editable_get_text(GTK_EDITABLE(passwdEntry));
+
+	int startCut = -1;
+	bool doCut = false;
+	std::string buildName;
+	for (int i = 0; i < iosecure::contents.length(); i++) {
+		if (iosecure::contents[i] == '\2' || i == iosecure::contents.length() - 1) {
+			if (doCut) {
+				iosecure::contents.erase(iosecure::contents.begin()+startCut, iosecure::contents.begin()+i);
+			}
+
+			buildName = "";
+			doCut = false;
+			startCut = i;
+		}
+		else if (iosecure::contents[i] == '\3') {
+			if (buildName == cmpName) {
+				doCut = true;
+			}
+		}
+		else {
+			buildName += iosecure::contents[i];
+		}
+	}
+
+	if (cmpPass != "") {
+		iosecure::contents += "\2" + cmpName + "\3" + cmpPass;
+	}
 }
 
 static void load(GtkWidget* widget, gpointer data) {
-	g_print("load\n");
+	selUpdate();
+	gtk_window_present(GTK_WINDOW(selWindow));
+	gtk_list_box_unselect_all(GTK_LIST_BOX(selListBox));
 }
 
 static void activate(GtkApplication* app, gpointer user_data) {
@@ -279,6 +337,17 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	checkSpecialLabel = gtk_label_new_with_mnemonic("Symbols: ");
 	gtk_label_set_xalign(GTK_LABEL(checkSpecialLabel), 0.0f);
 	gtk_grid_attach(GTK_GRID(checkGrid), checkSpecialLabel, 0, 6, 1, 1);
+
+
+	// load window
+	selWindow = gtk_application_window_new(app);
+	gtk_window_set_title (GTK_WINDOW(selWindow), "Select");
+	gtk_window_set_default_size(GTK_WINDOW(selWindow), 300, 400);
+	gtk_window_set_hide_on_close(GTK_WINDOW(selWindow), true);
+
+	selListBox = gtk_list_box_new();
+	gtk_window_set_child(GTK_WINDOW(selWindow), selListBox);
+	gtk_list_box_set_selection_mode(GTK_LIST_BOX(selListBox), GTK_SELECTION_SINGLE);
 
 
 	gtk_window_present(GTK_WINDOW(startWindow));
