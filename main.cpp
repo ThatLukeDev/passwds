@@ -12,7 +12,11 @@ bool preventNextLengthChange = false;
 int startWpasswdEntries = 0;
 gchar* revert;
 
+GtkApplication* app;
+
 GtkWidget* window;
+
+GtkWidget* deathWindow;
 
 GtkWidget* genWindow;
 
@@ -234,6 +238,11 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	g_signal_connect(startSubmitButton, "clicked", G_CALLBACK(entry), NULL);
 	gtk_grid_attach(GTK_GRID(startGrid), startSubmitButton, 0, 4, 4, 2);
 
+	g_signal_connect(startWindow, "close-request", G_CALLBACK(+[](GtkWindow* widget, gpointer data) {
+		g_application_quit(G_APPLICATION(gtk_window_get_application(widget)));
+		return true;
+	}), NULL);
+
 
 	// main window
 	window = gtk_application_window_new(app);
@@ -280,6 +289,52 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	GtkWidget* loadButton = gtk_button_new_with_label("Load");
 	g_signal_connect(loadButton, "clicked", G_CALLBACK(load), NULL);
 	gtk_grid_attach(GTK_GRID(grid), loadButton, 2, 3, 2, 1);
+
+	g_signal_connect(window, "close-request", G_CALLBACK(+[](GtkWindow* widget, gpointer data) {
+		gtk_window_present(GTK_WINDOW(deathWindow));
+		return true;
+	}), NULL);
+
+	// death prompt window
+	deathWindow = gtk_window_new();
+	gtk_window_set_title (GTK_WINDOW(deathWindow), "Passwds");
+	gtk_window_set_default_size(GTK_WINDOW(deathWindow), 200, 100);
+	gtk_window_set_hide_on_close(GTK_WINDOW(deathWindow), true);
+
+	GtkWidget* deathGrid = gtk_grid_new();
+	gtk_grid_set_column_spacing(GTK_GRID(deathGrid), 16);
+	gtk_grid_set_row_spacing(GTK_GRID(deathGrid), 16);
+	gtk_grid_set_column_homogeneous(GTK_GRID(deathGrid), true);
+	gtk_grid_set_row_homogeneous(GTK_GRID(deathGrid), true);
+	gtk_widget_set_margin_top(deathGrid, 8);
+	gtk_widget_set_margin_bottom(deathGrid, 8);
+	gtk_widget_set_margin_start(deathGrid, 8);
+	gtk_widget_set_margin_end(deathGrid, 8);
+	gtk_window_set_child(GTK_WINDOW(deathWindow), deathGrid);
+
+	GtkWidget* deathLabel = gtk_label_new_with_mnemonic("Do you want to save changes?");
+	gtk_grid_attach(GTK_GRID(deathGrid), deathLabel, 0, 0, 3, 1);
+
+	GtkWidget* deathSaveButton = gtk_button_new_with_label("Save");
+	g_signal_connect(deathSaveButton, "clicked", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		iosecure::close();
+		gpointer window = g_list_model_get_item(gtk_window_get_toplevels(), 0);
+		g_application_quit(G_APPLICATION(gtk_window_get_application(GTK_WINDOW(window))));
+	}), NULL);
+	gtk_grid_attach(GTK_GRID(deathGrid), deathSaveButton, 0, 1, 1, 1);
+
+	GtkWidget* deathDontSaveButton = gtk_button_new_with_label("Don't save");
+	g_signal_connect(deathDontSaveButton, "clicked", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		gpointer window = g_list_model_get_item(gtk_window_get_toplevels(), 0);
+		g_application_quit(G_APPLICATION(gtk_window_get_application(GTK_WINDOW(window))));
+	}), NULL);
+	gtk_grid_attach(GTK_GRID(deathGrid), deathDontSaveButton, 1, 1, 1, 1);
+
+	GtkWidget* deathCloseButton = gtk_button_new_with_label("Cancel");
+	g_signal_connect(deathCloseButton, "clicked", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
+		gtk_widget_hide(gtk_widget_get_parent(gtk_widget_get_parent(widget)));
+	}), NULL);
+	gtk_grid_attach(GTK_GRID(deathGrid), deathCloseButton, 2, 1, 1, 1);
 
 
 	// generate window
@@ -394,9 +449,9 @@ static void activate(GtkApplication* app, gpointer user_data) {
 
 int main(int argc, char** argv) {
 	#if GLIB_CHECK_VERSION(2, 74, 0)
-		GtkApplication* app = gtk_application_new("org.tld.passwd", G_APPLICATION_DEFAULT_FLAGS);
+		app = gtk_application_new("org.tld.passwd", G_APPLICATION_DEFAULT_FLAGS);
 	#else
-		GtkApplication* app = gtk_application_new("org.tld.passwd", G_APPLICATION_FLAGS_NONE);
+		app = gtk_application_new("org.tld.passwd", G_APPLICATION_FLAGS_NONE);
 	#endif
 	g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
 	int status = g_application_run(G_APPLICATION(app), argc, argv);
