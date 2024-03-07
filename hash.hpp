@@ -56,14 +56,14 @@ namespace sha256 {
 	}
 
 	char* hash(void* data, unsigned int size) {
-		unsigned int h0 = 0x6a09e667;
-		unsigned int h1 = 0xbb67ae85;
-		unsigned int h2 = 0x3c6ef372;
-		unsigned int h3 = 0xa54ff53a;
-		unsigned int h4 = 0x510e527f;
-		unsigned int h5 = 0x9b05688c;
-		unsigned int h6 = 0x1f83d9ab;
-		unsigned int h7 = 0x5be0cd19;
+		unsigned int h0 = swp(0x6a09e667);
+		unsigned int h1 = swp(0xbb67ae85);
+		unsigned int h2 = swp(0x3c6ef372);
+		unsigned int h3 = swp(0xa54ff53a);
+		unsigned int h4 = swp(0x510e527f);
+		unsigned int h5 = swp(0x9b05688c);
+		unsigned int h6 = swp(0x1f83d9ab);
+		unsigned int h7 = swp(0x5be0cd19);
 
 		unsigned int chunks = (unsigned int)std::ceil((size + 9) / 64.0);
 		unsigned int arrSize = chunks * 64;
@@ -92,14 +92,14 @@ namespace sha256 {
 					w[i] = w[i-16] + s0 + w[i-7] + s1;
 			}
 
-			unsigned int a = swp(h0);
-			unsigned int b = swp(h1);
-			unsigned int c = swp(h2);
-			unsigned int d = swp(h3);
-			unsigned int e = swp(h4);
-			unsigned int f = swp(h5);
-			unsigned int g = swp(h6);
-			unsigned int h = swp(h7);
+			unsigned int a = h0;
+			unsigned int b = h1;
+			unsigned int c = h2;
+			unsigned int d = h3;
+			unsigned int e = h4;
+			unsigned int f = h5;
+			unsigned int g = h6;
+			unsigned int h = h7;
 
 			for (unsigned int i = 0; i < 64; i++) {
 				unsigned int S1 = rotate(swp(e), 6) ^ rotate(swp(e), 11) ^ rotate(swp(e), 25);
@@ -121,14 +121,14 @@ namespace sha256 {
 
 			free(w);
 
-			h0 = swp(h0 + swp(a));
-			h1 = swp(h1 + swp(b));
-			h2 = swp(h2 + swp(c));
-			h3 = swp(h3 + swp(d));
-			h4 = swp(h4 + swp(e));
-			h5 = swp(h5 + swp(f));
-			h6 = swp(h6 + swp(g));
-			h7 = swp(h7 + swp(h));
+			h0 = swp(swp(h0) + swp(a));
+			h1 = swp(swp(h1) + swp(b));
+			h2 = swp(swp(h2) + swp(c));
+			h3 = swp(swp(h3) + swp(d));
+			h4 = swp(swp(h4) + swp(e));
+			h5 = swp(swp(h5) + swp(f));
+			h6 = swp(swp(h6) + swp(g));
+			h7 = swp(swp(h7) + swp(h));
 		}
 
 		char* out = (char*)malloc(32);
