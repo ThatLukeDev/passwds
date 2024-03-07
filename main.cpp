@@ -8,6 +8,7 @@
 
 char* storeName = (char*)".passwds-passkey-store-tmp";
 
+bool changedContent = false;
 bool preventNextLengthChange = false;
 int startWpasswdEntries = 0;
 gchar* revert;
@@ -178,6 +179,7 @@ static void save(GtkWidget* widget, gpointer data) {
 		if (iosecure::contents[i] == '\2' || i == iosecure::contents.length() - 1) {
 			if (doCut) {
 				iosecure::contents.erase(iosecure::contents.begin()+startCut, iosecure::contents.begin()+i);
+				changedContent = true;
 			}
 
 			buildName = "";
@@ -196,7 +198,14 @@ static void save(GtkWidget* widget, gpointer data) {
 
 	if (cmpPass != "") {
 		iosecure::contents += "\2" + cmpName + "\3" + cmpPass;
+		changedContent = true;
 	}
+}
+
+static void removeSaved(GtkWidget* widget, gpointer data) {
+	gtk_editable_set_text(GTK_EDITABLE(passwdEntry), "");
+	save(widget, data);
+	gtk_editable_set_text(GTK_EDITABLE(nameEntry), "");
 }
 
 static void load(GtkWidget* widget, gpointer data) {
@@ -282,16 +291,25 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	g_signal_connect(checkButton, "clicked", G_CALLBACK(check), NULL);
 	gtk_grid_attach(GTK_GRID(grid), checkButton, 2, 2, 2, 1);
 
-	GtkWidget* saveButton = gtk_button_new_with_label("Save");
-	g_signal_connect(saveButton, "clicked", G_CALLBACK(save), NULL);
-	gtk_grid_attach(GTK_GRID(grid), saveButton, 0, 3, 2, 1);
-
-	GtkWidget* loadButton = gtk_button_new_with_label("Load");
+	GtkWidget* loadButton = gtk_button_new_with_label("Select");
 	g_signal_connect(loadButton, "clicked", G_CALLBACK(load), NULL);
-	gtk_grid_attach(GTK_GRID(grid), loadButton, 2, 3, 2, 1);
+	gtk_grid_attach(GTK_GRID(grid), loadButton, 0, 3, 2, 1);
+
+	GtkWidget* saveButton = gtk_button_new_with_label("+");
+	g_signal_connect(saveButton, "clicked", G_CALLBACK(save), NULL);
+	gtk_grid_attach(GTK_GRID(grid), saveButton, 2, 3, 1, 1);
+
+	GtkWidget* removeButton = gtk_button_new_with_label("-");
+	g_signal_connect(removeButton, "clicked", G_CALLBACK(removeSaved), NULL);
+	gtk_grid_attach(GTK_GRID(grid), removeButton, 3, 3, 1, 1);
 
 	g_signal_connect(window, "close-request", G_CALLBACK(+[](GtkWindow* widget, gpointer data) {
-		gtk_window_present(GTK_WINDOW(deathWindow));
+		if (changedContent) {
+			gtk_window_present(GTK_WINDOW(deathWindow));
+		}
+		else {
+			g_application_quit(G_APPLICATION(gtk_window_get_application(widget)));
+		}
 		return true;
 	}), NULL);
 
@@ -441,6 +459,7 @@ static void activate(GtkApplication* app, gpointer user_data) {
 	gtk_list_box_set_selection_mode(GTK_LIST_BOX(selListBox), GTK_SELECTION_NONE);
 	g_signal_connect(selListBox, "row-activated", G_CALLBACK(+[](GtkWidget* widget, GtkListBoxRow* row, gpointer data) {
 		passUpdate(gtk_label_get_text(GTK_LABEL(gtk_list_box_row_get_child(row))));
+		gtk_widget_hide(selWindow);
 	}), NULL);
 
 
