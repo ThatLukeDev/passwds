@@ -8,6 +8,7 @@
 #include <functional>
 
 #include "hash.hpp"
+#include "aes.hpp"
 
 class data {
 public:
@@ -44,22 +45,6 @@ namespace iosecure {
 		if (stat(_filename, &sb) == -1) return -1; // no file
 		if (sb.st_mode & S_IFDIR) return 1; // directory
 		return 0; // file
-	}
-
-	data vernam(data a, data b) {
-		data build = data(a.size);
-
-		for (int i = 0; i < a.size; i++) {
-			build.content[i] = a.content[i] ^ b.content[i % b.size];
-		}
-
-		return build;
-	}
-
-	void vernamSelf(data a, data b) {
-		for (int i = 0; i < a.size; i++) {
-			a.content[i] = a.content[i] ^ b.content[i % b.size];
-		}
 	}
 
 	int checkPasswd() {
@@ -109,12 +94,13 @@ namespace iosecure {
 				sr.seekg(32);
 				sr.read((char*)ciphered.content, ciphered.size);
 
-				data raw = vernam(ciphered, data((unsigned char*)sha256::hash((char*)master.c_str()), 32));
-				contents = std::string((char*)raw.content);
+				if (ciphered.size > 0) {
+					char* raw = aes256::decrypt(ciphered.content, ciphered.size, sha256::hash(master.c_str()));
+					contents = std::string(raw);
+				}
 
 				sr.close();
 				free(ciphered.content);
-				free(raw.content);
 				break;
 		}
 
@@ -127,13 +113,16 @@ namespace iosecure {
 
 		char* hash = sha256::hashX1000((master+salt).c_str());
 
-		data raw = data(contents.size()+32);
+		data raw = data(std::ceil(contents.length()/16.0)*16+32);
 		memcpy(raw.content, hash, 32);
 		raw.content += 32;
 		raw.size -= 32;
 		strcpy((char*)raw.content, contents.c_str());
 
-		vernamSelf(raw, data((unsigned char*)sha256::hash((char*)master.c_str()), 32));
+		if (contents.length() > 0) {
+			char* ciphered = aes256::encrypt((void*)contents.c_str(), contents.size(), sha256::hash(master.c_str()));
+			memcpy(raw.content, ciphered, std::ceil(contents.length()/16.0)*16);
+		}
 
 		raw.content -= 32;
 		raw.size += 32;
