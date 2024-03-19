@@ -4,6 +4,8 @@
 namespace aes256 {
 	unsigned int W[60];
 
+	unsigned char iv[16] = {96,77,198,211,91,92,163,99,89,15,213,11,29,108,179,252};
+
 	unsigned char sbox[256];
 	unsigned char rsbox[256];
 
@@ -17,7 +19,7 @@ namespace aes256 {
 		return (a >> (sizeof(T)*8 - b))|(a << b);
 	}
 
-	unsigned char rmult(unsigned char a, unsigned char b) {
+	unsigned char rmult(unsigned char a, unsigned char b) { // peasants algo
 		unsigned char p = 0; // ab+p=product
 		while (a != 0 && b != 0) { // if a or b is zero, then 0*(a or b)+p=product so p(+0)=product (we can stop)
 			if (b & 0b00000001) { // if polynomial for b has constant term
@@ -109,11 +111,24 @@ namespace aes256 {
 
 		initKeySchedule(_key);
 
-		for (unsigned int block = 0; block < blocksLen; block++) {
+		for (int block = 0; block < blocksLen; block++) {
+			// cipher block chaining
+			if (block == 0) {
+				for (int i = 0; i < 16; i++) {
+					blocks[block][i] ^= iv[i];
+				}
+			}
+			else {
+				for (int i = 0; i < 16; i++) {
+					blocks[block][i] ^= blocks[block-1][i];
+				}
+			}
+
 			// initial round key addition
 			for (int i = 0; i < 4; i++) {
 				((unsigned int*)blocks[block])[i] ^= W[i];
 			}
+
 			for (int round = 1; round <= 13; round++) {
 				// sub bytes from sbox
 				for (int i = 0; i < 16; i++) {
@@ -172,7 +187,7 @@ namespace aes256 {
 
 		initKeySchedule(_key);
 
-		for (unsigned int block = 0; block < blocksLen; block++) {
+		for (int block = blocksLen - 1; block >= 0; block--) {
 			// initial remove round key
 			for (int i = 0; i < 4; i++) {
 				((unsigned int*)blocks[block])[i] ^= W[14*4+i];
@@ -218,6 +233,18 @@ namespace aes256 {
 			// final round key removal
 			for (int i = 0; i < 4; i++) {
 				((unsigned int*)blocks[block])[i] ^= W[i];
+			}
+
+			// cipher block chaining
+			if (block == 0) {
+				for (int i = 0; i < 16; i++) {
+					blocks[block][i] ^= iv[i];
+				}
+			}
+			else {
+				for (int i = 0; i < 16; i++) {
+					blocks[block][i] ^= blocks[block-1][i];
+				}
 			}
 		}
 
